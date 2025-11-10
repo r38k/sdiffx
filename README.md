@@ -21,6 +21,20 @@ npm install
 npm run build
 ```
 
+### `sdiff` コマンドを利用可能にする
+
+ローカルでビルドした CLI を `sdiff` / `sdiff-interactive` として呼び出したい場合は、リポジトリ直下で次を実行してください。
+
+```bash
+# グローバルにインストール（現在のフォルダを登録）
+npm install -g .
+
+# 開発用途なら npm link でシンボリックリンクを作成
+npm link
+```
+
+成功すると `PATH` 上にコマンドが追加され、どのディレクトリでも `sdiff original.md formatted.md` や `sdiff -i original.md formatted.md` を実行できます。不要になった場合は `npm uninstall -g sdiff`（または `npm unlink`）で登録を解除してください。
+
 ## 使用方法
 
 ### 1. 通常モード（Diff表示のみ）
@@ -34,8 +48,12 @@ node dist/index.js <original-file> <formatted-file>
 ### 2. インタラクティブモード（Diff + 置換）
 
 ```bash
-node dist/index-interactive.js <original-file> <formatted-file>
+node dist/index.js -i <original-file> <formatted-file>
+# 互換エイリアス: node dist/index-interactive.js <original-file> <formatted-file>
 ```
+
+> npmなどでグローバルインストールしている場合は `sdiff -i <original-file> <formatted-file>` や互換の
+> `sdiff-interactive <original-file> <formatted-file>` を直接呼び出せます。
 
 差分を確認してから、以下が選択できます：
 - **Interactive**: 1つずつ確認しながら適用
@@ -50,11 +68,12 @@ node dist/index-interactive.js <original-file> <formatted-file>
 node dist/index.js sample_original.md sample_formatted.md
 
 # インタラクティブモード
-node dist/index-interactive.js sample_original.md sample_formatted.md
+node dist/index.js -i sample_original.md sample_formatted.md
 
 # テストサンプルを実行
 ./test-all-samples.sh
 ```
+> グローバルインストール済みなら `sdiff -i sample_original.md sample_formatted.md` も同様に利用できます。
 
 ## サンプルファイル
 

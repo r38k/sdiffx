@@ -5,8 +5,8 @@
 インタラクティブモードは**対話型のターミナル環境でのみ動作**します。
 
 ❌ **動作しない環境:**
-- パイプ経由の入力 (`echo "r" | sdiff-interactive ...`)
-- リダイレクト (`< input.txt sdiff-interactive ...`)
+- パイプ経由の入力 (`echo "r" | sdiff -i ...`)
+- リダイレクト (`< input.txt sdiff -i ...`)
 - GitHub Actions などの自動化環境
 - SSH経由の非TTY接続
 
@@ -21,7 +21,7 @@
 ターミナルで以下を実行します：
 
 ```bash
-node dist/index-interactive.js sample_missing_original.md sample_missing_formatted.md
+node dist/index.js -i sample_missing_original.md sample_missing_formatted.md
 ```
 
 すると、以下が表示されます：
@@ -87,7 +87,7 @@ node dist/index-interactive.js sample_missing_original.md sample_missing_formatt
 node dist/index.js original.md formatted.md
 
 # インタラクティブモード（対話型）
-node dist/index-interactive.js original.md formatted.md
+node dist/index.js -i original.md formatted.md
 ```
 
 ## トラブルシューティング
@@ -100,10 +100,10 @@ node dist/index-interactive.js original.md formatted.md
 
 ```bash
 # ❌ これはダメ
-echo "" | node dist/index-interactive.js original.md formatted.md
+echo "" | node dist/index.js -i original.md formatted.md
 
 # ✅ これが正しい
-node dist/index-interactive.js original.md formatted.md
+node dist/index.js -i original.md formatted.md
 ```
 
 ### "Raw mode is not supported"

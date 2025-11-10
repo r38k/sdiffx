@@ -5,19 +5,21 @@
 sdiffには2つのモードがあります：
 
 1. **通常モード** (`sdiff`) - 差分を表示するのみ
-2. **インタラクティブモード** (`sdiff-interactive`) - 差分表示 + 置換機能
+2. **インタラクティブモード** (`sdiff -i` / `sdiff-interactive`) - 差分表示 + 置換機能
 
 ## インタラクティブモードの起動
 
 ```bash
-node dist/index-interactive.js <original-file> <formatted-file>
+node dist/index.js -i <original-file> <formatted-file>
 ```
 
-または、インストール後：
+または、インストール後（エイリアス）：
 
 ```bash
-sdiff-interactive <original-file> <formatted-file>
+sdiff -i <original-file> <formatted-file>
+# 互換用: sdiff-interactive <original-file> <formatted-file>
 ```
+> `sdiff-interactive` エイリアスは npm などでグローバルインストールした場合に利用できます。
 
 ## 使い方
 
@@ -130,7 +132,7 @@ b キーを押す
 
 ```bash
 # 起動
-node dist/index-interactive.js sample_missing_original.md sample_missing_formatted.md
+node dist/index.js -i sample_missing_original.md sample_missing_formatted.md
 
 # Diff確認 → r キーを押す
 # → i キーを押す（Interactive mode選択）
@@ -142,7 +144,7 @@ node dist/index-interactive.js sample_missing_original.md sample_missing_formatt
 
 ```bash
 # 起動
-node dist/index-interactive.js sample_extra_original.md sample_extra_formatted.md
+node dist/index.js -i sample_extra_original.md sample_extra_formatted.md
 
 # Diff確認 → r キーを押す
 # → b キーを押す（Batch mode選択）
@@ -155,7 +157,7 @@ node dist/index-interactive.js sample_extra_original.md sample_extra_formatted.m
 | 用途 | コマンド | 説明 |
 |------|---------|------|
 | 差分をさっと確認 | `sdiff file1 file2` | 結果を表示するのみ |
-| 差分を確認して置換 | `sdiff-interactive file1 file2` | 確認しながら適用 |
+| 差分を確認して置換 | `sdiff -i file1 file2` *(alias: `sdiff-interactive`)* | 確認しながら適用 |
 
 ## キーボードショートカット一覧
 
@@ -186,7 +188,7 @@ node dist/index-interactive.js sample_extra_original.md sample_extra_formatted.m
 for original in *_original.md; do
   formatted="${original/_original.md/_formatted.md}"
   echo "Processing $original ↔ $formatted"
-  sdiff-interactive "$original" "$formatted"
+  sdiff -i "$original" "$formatted"
 done
 ```
 
@@ -199,7 +201,7 @@ done
 sdiff original.md formatted.md
 
 # 2. インタラクティブモードで置換
-sdiff-interactive original.md formatted.md
+sdiff -i original.md formatted.md
 ```
 
 ## トラブルシューティング

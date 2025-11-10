@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import { compareFiles } from '../core/processor.js';
 import { Summary } from './components/Summary.js';
 import { DiffList } from './components/DiffList.js';
+import { FileComparison } from '../diff/types.js';
 
 interface AppProps {
   originalFile: string;
@@ -12,7 +13,7 @@ interface AppProps {
 export const App: React.FC<AppProps> = ({ originalFile, formattedFile }) => {
   const [state, setState] = useState<'loading' | 'display' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [comparison, setComparison] = useState<any>(null);
+  const [comparison, setComparison] = useState<FileComparison | null>(null);
 
   useEffect(() => {
     try {
@@ -59,7 +60,10 @@ export const App: React.FC<AppProps> = ({ originalFile, formattedFile }) => {
             <DiffList entries={comparison.diffs.entries} maxLines={15} />
           </Box>
           <Box marginTop={1}>
-            <Text dimColor>Use 'sdiff-interactive' for full navigation, or see README for details</Text>
+            <Text dimColor>
+              Use 'sdiff -i' for the interactive TUI (global installs also expose the 'sdiff-interactive'
+              alias) or see README for details
+            </Text>
           </Box>
         </>
       )}
