@@ -23,15 +23,34 @@ npm run build
 
 ## 使用方法
 
+### 1. 通常モード（Diff表示のみ）
+
 ```bash
 node dist/index.js <original-file> <formatted-file>
 ```
+
+差分を表示するだけで、修正はしません。
+
+### 2. インタラクティブモード（Diff + 置換）
+
+```bash
+node dist/index-interactive.js <original-file> <formatted-file>
+```
+
+差分を確認してから、以下が選択できます：
+- **Interactive**: 1つずつ確認しながら適用
+- **Batch**: すべての変更を一括適用
+
+詳細は [INTERACTIVE-MODE.md](./INTERACTIVE-MODE.md) を参照
 
 ### 例
 
 ```bash
 # 基本的な使用例
 node dist/index.js sample_original.md sample_formatted.md
+
+# インタラクティブモード
+node dist/index-interactive.js sample_original.md sample_formatted.md
 
 # テストサンプルを実行
 ./test-all-samples.sh
