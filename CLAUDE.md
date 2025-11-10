@@ -6,67 +6,106 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **sdiff** is a static diff checking tool designed to validate text integrity when documents are processed by LLMs. The primary use case is comparing text before and after LLM formatting (from PDFs/Excel to markdown) to ensure no unintended changes were made.
 
-### Key Constraints
-- Pre-formatted text contains no markdown syntax; post-formatted text may contain markdown markers (#, -, etc.)
-- Text comparison should ignore markdown syntax and focus on actual content
-- Sentence/line boundaries are not always at punctuation (。); splitting should prioritize whitespace and line breaks
-- Documents can vary widely (regulations, design specs, etc.), so no assumptions should be made about structure
+### Key Implementation Details
+- **Language**: TypeScript with ESM modules
+- **CLI**: React Ink for terminal UI
+- **Text Splitting**: Whitespace and newline-based (not punctuation-based)
+- **Markdown Handling**: Strips markdown syntax from formatted text before comparison
+- **Diff Algorithm**: Greedy matching with longest common subsequence
 
-### Primary Use Cases
-1. Extract text from PDFs/Excel files
-2. Format text with LLM
-3. Compare pre/post text at sentence/word level to detect unintended changes
-4. Allow interactive or batch string replacement when differences are found
+### Core Modules
 
-## Implementation Plan
+1. **`src/utils/markdown.ts`** - Text parsing and normalization
+   - `stripMarkdown()` - Remove markdown syntax
+   - `splitBySentence()` - Split by whitespace/newlines
+   - `normalizeForComparison()` - Combined preprocessing
 
-### Tech Stack
-- **CLI Framework**: React Ink (for terminal UI)
-- **Language**: TypeScript/JavaScript (based on Ink requirement)
-- **Input**: Two text files (typically markdown)
-- **Output**: Visual diff with sentence-level granularity + ability to perform string replacements
+2. **`src/diff/algorithm.ts`** - Diff generation
+   - `generateDiffMyers()` - Greedy diff algorithm (primary)
+   - `generateDiff()` - LCS-based algorithm (alternative)
+   - Returns structured diff entries with type (added/removed/unchanged)
 
-### Core Components
+3. **`src/core/processor.ts`** - File handling and comparison
+   - `compareFiles()` - Load and compare two files
+   - `compareTexts()` - Compare text strings directly
+   - Chains markdown stripping → splitting → diff generation
 
-1. **Text Parsing**: Strip markdown syntax before comparison
-2. **Diff Engine**: Generate sentence-level diffs (whitespace/newline based splitting)
-3. **CLI Interface**: Interactive mode using React Ink
-4. **String Replacement**: Two modes - interactive confirmation or batch replace
+4. **`src/cli/App.tsx`** - Main React Ink application
+   - Loads files, runs comparison, displays results
+   - Shows summary and first 15 diffs
+   - Error handling for file I/O
 
-### Architecture Notes
-- Keep diff generation logic separate from CLI presentation
-- Diff output should be composable (usable outside Ink if needed)
-- Support reading from file paths or stdin
-- Preserve character positions for replacement operations
+5. **`src/cli/components/`** - Reusable UI components
+   - `Summary.tsx` - Diff statistics display
+   - `DiffList.tsx` - List view of diffs
+   - `DiffViewer.tsx` - Interactive single diff viewer (planned)
+   - `ReplacementPrompt.tsx` - Replacement mode selector (planned)
 
-## Development Setup
+## Common Development Commands
 
-Once the project is scaffolded:
-1. Install dependencies with `npm install` or `yarn`
-2. Check `package.json` for build, test, and lint scripts
-3. Development typically follows standard TypeScript/Node.js conventions
+```bash
+npm install          # Install dependencies
+npm run build        # Compile TypeScript to dist/
+npm test             # Run Jest test suite
+npm run lint         # Run ESLint (if configured)
+npm run dev          # Run ts-node directly (if configured)
+node dist/index.js <file1> <file2>  # Run CLI
+```
 
-## File Structure (To Be Created)
+## Testing
+
+- **Test Framework**: Jest with ts-jest for ESM support
+- **Test Files**: Colocated with source (*.test.ts)
+- **Configuration**: jest.config.js with ESM settings and moduleNameMapper
+- **Current Coverage**: 17 tests covering markdown utilities and diff algorithm
+
+### Running Specific Tests
+```bash
+npm test -- --testNamePattern="stripMarkdown"
+npm test -- src/diff/algorithm.test.ts
+```
+
+## File Structure
 
 ```
 src/
-  ├── diff/          # Core diff algorithm and text processing
-  ├── cli/           # React Ink CLI components
-  ├── utils/         # Markdown stripping, text normalization
-  └── index.ts       # Entry point
+  ├── cli/                # React Ink UI components
+  │   ├── App.tsx         # Main app component
+  │   └── components/     # Reusable components
+  ├── core/
+  │   └── processor.ts    # File I/O and comparison orchestration
+  ├── diff/
+  │   ├── algorithm.ts    # Diff algorithms (*.test.ts for tests)
+  │   ├── replacement.ts  # String replacement utilities
+  │   └── types.ts        # TypeScript interfaces
+  └── utils/
+      └── markdown.ts     # Text processing (*.test.ts for tests)
 ```
 
-## Testing and Quality
+## Configuration Notes
 
-Check `package.json` for available scripts. Common patterns:
-- `npm run build` - Compile TypeScript
-- `npm run test` - Run tests
-- `npm run lint` - Run linter
-- `npm run dev` - Development mode (if available)
+- **tsconfig.json**: Uses `moduleResolution: "nodenext"` and `module: "NodeNext"` for ESM
+- **package.json**: Configured with `"type": "module"` for ESM
+- **Import Statements**: Must include `.js` extension for relative imports (ESM requirement)
+- **Jest Configuration**: Uses moduleNameMapper to map `.js` extensions
 
-## Notes for Implementation
+## Known Limitations and TODO Items
 
-- The README specifies using React Ink, which requires careful state management for complex diffs
-- Consider performance with large documents
-- Markdown stripping should be robust (handle edge cases like code blocks)
-- Diff granularity (sentence vs word vs character) should be configurable or well-documented
+- **Diff Quality**: Current greedy algorithm may miss optimal alignments with heavily edited text
+- **Replacement Feature**: UI components exist but interactive replacement mode not fully integrated
+- **Performance**: Not optimized for very large documents (100MB+)
+- **Character-level Diffs**: Currently sentence-level only; character-level comparison future work
+
+## Performance Considerations
+
+- Sentence splitting is O(n) where n = text length
+- Diff generation is O(m*n) where m, n = sentence counts
+- For typical documents (1-100K sentences), performance is acceptable
+- Large documents may benefit from incremental diff or sampling
+
+## Debugging Tips
+
+- Use `npm run build` to check for TypeScript errors before running
+- Check markdown stripping is working: test with `# Header` → should become `Header`
+- For diff issues, add temporary logging in `src/diff/algorithm.ts`
+- Run single test file: `npm test -- src/utils/markdown.test.ts --verbose`
