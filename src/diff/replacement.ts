@@ -1,83 +1,80 @@
 /**
- * String replacement utilities
+ * String replacement utilities for applying diff-based changes
  */
 
 export interface Replacement {
   original: string;
-  formatted: string;
+  replacement: string;
   position?: number;
   lineNumber?: number;
 }
 
 /**
- * Find replacements based on diff
- * Attempts to match removed and added entries
+ * Apply replacements map to original text
+ * Replaces instances of keys with values from the map
  */
-export function findReplacements(
-  original: string[],
-  formatted: string[],
-  removedIndices: number[],
-  addedIndices: number[],
-): Replacement[] {
-  const replacements: Replacement[] = [];
+export function applyReplacements(text: string, replacements: Map<string, string>): string {
+  let result = text;
 
-  // Try to match consecutive removed and added entries
-  let removeIdx = 0;
-  let addIdx = 0;
+  // Sort by length (descending) to replace longer strings first
+  const entries = Array.from(replacements.entries()).sort((a, b) => b[0].length - a[0].length);
 
-  while (removeIdx < removedIndices.length && addIdx < addedIndices.length) {
-    const origIdx = removedIndices[removeIdx];
-    const formIdx = addedIndices[addIdx];
+  for (const [original, replacement] of entries) {
+    // Replace all occurrences (case-sensitive)
+    const regex = new RegExp(escapeRegex(original), 'g');
+    result = result.replace(regex, replacement);
+  }
 
-    // Check similarity (simple heuristic: similar length)
-    const origLen = original[origIdx].length;
-    const formLen = formatted[formIdx].length;
-    const similarity = 1 - Math.abs(origLen - formLen) / Math.max(origLen, formLen);
+  return result;
+}
 
-    if (similarity > 0.3) {
-      // Likely a replacement
-      replacements.push({
-        original: original[origIdx],
-        formatted: formatted[formIdx],
-        position: origIdx,
-        lineNumber: origIdx + 1,
-      });
-      removeIdx++;
-      addIdx++;
-    } else {
-      // No match
-      if (origLen < formLen) {
-        removeIdx++;
-      } else {
-        addIdx++;
-      }
-    }
+/**
+ * Escape special regex characters in a string
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Create a replacement map from added lines to be applied
+ */
+export function createReplacementMap(
+  addedLines: string[],
+  applySuggestions: boolean = false,
+): Map<string, string> {
+  const replacements = new Map<string, string>();
+
+  // For now, just add the lines as-is
+  // In batch mode, all additions are accepted
+  // In interactive mode, user selects which ones to apply
+  for (const line of addedLines) {
+    replacements.set(line, line);
   }
 
   return replacements;
 }
 
 /**
- * Apply replacements to text
+ * Generate a formatted patch showing what would be changed
  */
-export function applyReplacementToText(
-  text: string,
-  replacements: Replacement[],
+export function generatePatch(
+  original: string,
+  replacements: Map<string, string>,
 ): string {
-  let result = text;
+  const lines = original.split('\n');
+  const patched = applyReplacements(original, replacements);
+  const patchedLines = patched.split('\n');
 
-  // Sort replacements by position (descending) to avoid index shifting
-  const sorted = [...replacements].sort(
-    (a, b) => (b.position || 0) - (a.position || 0),
-  );
+  let patch = '';
+  for (let i = 0; i < Math.max(lines.length, patchedLines.length); i++) {
+    const origLine = lines[i] || '';
+    const patchedLine = patchedLines[i] || '';
 
-  for (const replacement of sorted) {
-    // Find and replace the original string
-    const idx = result.indexOf(replacement.original);
-    if (idx !== -1) {
-      result = result.substring(0, idx) + replacement.formatted + result.substring(idx + replacement.original.length);
+    if (origLine !== patchedLine) {
+      patch += `- ${origLine}\n`;
+      patch += `+ ${patchedLine}\n`;
     }
   }
 
-  return result;
+  return patch;
 }
