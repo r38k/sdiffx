@@ -118,13 +118,24 @@ npm run lint       # ESLint実行
 - 文字単位での差分には未対応
 - 大規模ドキュメント（100MB+）は未最適化
 
+## 実装済みの機能
+
+### 置換機能（実装済み）
+
+```typescript
+// Interactive mode: 1つずつ確認
+// Batch mode: 一括置換
+```
+
+詳細は `src/cli/components/InteractiveReplacer.tsx` と `src/diff/replacement.ts` を参照
+
 ## 今後の機能
 
-- [ ] インタラクティブモード（TUI）での差分確認
-- [ ] 自動置換機能（確認ベース、一括置換）
+- [ ] インタラクティブモード（TUI）での差分確認の統合
 - [ ] 複数ファイルの一括処理
 - [ ] JSON出力フォーマット
 - [ ] 差分レポートの生成
+- [ ] 置換結果のファイル出力
 
 ## 注意点
 
