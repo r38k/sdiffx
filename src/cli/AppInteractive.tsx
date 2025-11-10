@@ -171,7 +171,7 @@ export const AppInteractive: React.FC<AppInteractiveProps> = ({ originalFile, fo
         <Text bold>置換内容の最終確認</Text>
         <Box marginY={1}>
           <Text>
-            モード: {modeLabel} ・ 適用予定: {appliedCount}/{total}
+            モード: {modeLabel} ・ 選択済み: {appliedCount}/{total}
           </Text>
         </Box>
         {appliedCount === 0 ? (

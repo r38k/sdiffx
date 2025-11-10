@@ -115,6 +115,18 @@ export function findMatchingLine(text: string, needle: string): string | null {
   const normalizedNeedle = needle.trim();
   const lines = text.split(/\r?\n/);
   for (const line of lines) {
+    if (line === needle) {
+      return line;
+    }
+  }
+
+  for (const line of lines) {
+    if (line.trim() === normalizedNeedle) {
+      return line;
+    }
+  }
+
+  for (const line of lines) {
     if (line.includes(normalizedNeedle)) {
       return line;
     }

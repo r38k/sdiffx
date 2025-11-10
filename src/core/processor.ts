@@ -67,8 +67,17 @@ export function applyReplacementsToFile(
   formattedPath: string,
   replacements: Map<string, string>,
 ): string {
-  const original = readFile(originalPath);
-  const formatted = readFile(formattedPath);
+  let original: string;
+  let formatted: string;
+
+  try {
+    original = readFile(originalPath);
+    formatted = readFile(formattedPath);
+  } catch (err) {
+    throw new Error(
+      `Failed to read files for replacement: ${formatErrorMessage(err)}`,
+    );
+  }
 
   if (replacements.size === 0) {
     return formatted;
@@ -76,12 +85,24 @@ export function applyReplacementsToFile(
 
   let result = formatted;
 
-  for (const [, payload] of replacements.entries()) {
-    const instruction = deserializeInstruction(payload);
-    result = applyInstruction(result, instruction, original);
+  for (const [key, payload] of replacements.entries()) {
+    try {
+      const instruction = deserializeInstruction(payload);
+      result = applyInstruction(result, instruction, original);
+    } catch (err) {
+      throw new Error(
+        `Failed to apply replacement '${key}': ${formatErrorMessage(err)}`,
+      );
+    }
   }
 
-  writeFile(formattedPath, result);
+  try {
+    writeFile(formattedPath, result);
+  } catch (err) {
+    throw new Error(
+      `Failed to write replacements to ${formattedPath}: ${formatErrorMessage(err)}`,
+    );
+  }
   return result;
 }
 
@@ -90,29 +111,80 @@ function applyInstruction(target: string, instruction: ReplacementInstruction, o
     return removeSnippet(target, instruction.snippet);
   }
 
-  const snippet = instruction.snippet || findSnippetNearAnchor(original, instruction.anchor) || '';
+  const snippet =
+    instruction.snippet ||
+    findSnippetNearAnchor(original, instruction.anchor, instruction.anchorPosition) ||
+    '';
   return insertSnippet(target, snippet, instruction.anchor, instruction.anchorPosition);
 }
 
-function findSnippetNearAnchor(text: string, anchor?: string): string | null {
+function findSnippetNearAnchor(
+  text: string,
+  anchor?: string,
+  position: 'before' | 'after' = 'after',
+): string | null {
   if (!anchor) {
     return null;
   }
 
-  const anchorIndex = text.indexOf(anchor);
-  if (anchorIndex === -1) {
+  const normalizedText = text.replace(/\r/g, '');
+  const normalizedAnchor = anchor.replace(/\r/g, '');
+  const anchorLength = normalizedAnchor.length;
+
+  if (anchorLength === 0) {
     return null;
   }
 
-  const endOfAnchor = anchorIndex + anchor.length;
-  const remaining = text.slice(endOfAnchor);
-  const nextNewline = remaining.indexOf('\n');
-  if (nextNewline === -1) {
-    const candidate = remaining.trim();
-    return candidate.length > 0 ? candidate : null;
+  const locations: number[] = [];
+  let searchIndex = 0;
+  while (searchIndex < normalizedText.length) {
+    const idx = normalizedText.indexOf(normalizedAnchor, searchIndex);
+    if (idx === -1) {
+      break;
+    }
+    locations.push(idx);
+    searchIndex = idx + anchorLength;
   }
-  const snippet = remaining.slice(0, nextNewline).trim();
-  return snippet.length > 0 ? snippet : null;
+
+  if (locations.length === 0) {
+    return null;
+  }
+
+  const orderedPositions = position === 'before' ? [...locations].reverse() : locations;
+
+  for (const location of orderedPositions) {
+    const candidate =
+      position === 'before'
+        ? extractLineBefore(normalizedText, location)
+        : extractLineAfter(normalizedText, location + anchorLength);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function extractLineAfter(text: string, startIdx: number): string | null {
+  const remainder = text.slice(startIdx);
+  const segments = remainder.split(/\r?\n/);
+  for (const segment of segments) {
+    if (segment.trim().length > 0) {
+      return segment;
+    }
+  }
+  return null;
+}
+
+function extractLineBefore(text: string, anchorIdx: number): string | null {
+  const leading = text.slice(0, anchorIdx);
+  const segments = leading.split(/\r?\n/).reverse();
+  for (const segment of segments) {
+    if (segment.trim().length > 0) {
+      return segment;
+    }
+  }
+  return null;
 }
 
 function normalizeSnippet(snippet: string): string {
@@ -124,15 +196,46 @@ function removeSnippet(source: string, snippet: string): string {
     return source;
   }
 
-  const normalized = normalizeSnippet(snippet);
-  const candidates = [normalized + '\n', '\n' + normalized, normalized];
-  for (const pattern of candidates) {
-    const index = source.indexOf(pattern);
-    if (index !== -1) {
-      return source.slice(0, index) + source.slice(index + pattern.length);
+  const sanitizedSnippet = snippet.replace(/\r/g, '');
+  const snippetLines = sanitizedSnippet
+    .split(/\n/)
+    .filter((line) => line.trim().length > 0);
+
+  if (snippetLines.length > 0) {
+    const sourceLines = source.split(/\r?\n/);
+    for (let i = 0; i <= sourceLines.length - snippetLines.length; i++) {
+      let matches = true;
+      for (let j = 0; j < snippetLines.length; j++) {
+        if (sourceLines[i + j].trim() !== snippetLines[j].trim()) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        sourceLines.splice(i, snippetLines.length);
+        return sourceLines.join('\n');
+      }
     }
   }
-  return source;
+
+  const fallback = removeDirectMatch(source, sanitizedSnippet);
+  return fallback ?? source;
+}
+
+function removeDirectMatch(source: string, needle: string): string | null {
+  if (!needle) {
+    return null;
+  }
+  const index = source.indexOf(needle);
+  if (index === -1) {
+    return null;
+  }
+  const before = source.slice(0, index);
+  const after = source.slice(index + needle.length);
+  if (before.endsWith('\n') && after.startsWith('\n')) {
+    return before + after.slice(1);
+  }
+  return before + after;
 }
 
 function insertSnippet(
@@ -163,4 +266,8 @@ function insertSnippet(
 
   const insertPoint = anchorIndex + anchor.length;
   return source.slice(0, insertPoint) + '\n' + insertion + source.slice(insertPoint);
+}
+
+function formatErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

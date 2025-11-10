@@ -67,7 +67,9 @@ export const InteractiveReplacer: React.FC<InteractiveReplacerProps> = ({
     setReplacements(new Map());
     setDecisionStates(Array(totalEntries).fill('pending'));
     setCurrentIndex(totalEntries > 0 ? 0 : -1);
-  }, [history, totalEntries]);
+    // history オブジェクトは親で安定的に再利用される前提のため、依存配列には含めない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalEntries]);
 
   const completedCount = decisionStates.filter((state) => state !== 'pending').length;
   const undoCount = history.size();
@@ -329,10 +331,8 @@ export const InteractiveReplacer: React.FC<InteractiveReplacerProps> = ({
           </Text>
         </Box>
         <Box marginBottom={1}>
-          <Text>
-            {isFormattedExtra ? 'このテキストを削除しますか？' : 'このテキストを追加しますか？'} (y=はい /
-            n=スキップ / u=1つ戻る / q=終了)
-          </Text>
+          <Text>{isFormattedExtra ? 'このテキストを削除しますか？' : 'このテキストを追加しますか？'}</Text>
+          <Text dimColor>y: はい / n: スキップ / u: 1つ戻る / q: キャンセル</Text>
         </Box>
       </Box>
     );
