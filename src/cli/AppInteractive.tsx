@@ -32,6 +32,27 @@ export const AppInteractive: React.FC<AppInteractiveProps> = ({ originalFile, fo
     }
   }, [originalFile, formattedFile]);
 
+  // Keyboard input hook - must be called at top level
+  useEffect(() => {
+    if (state === 'diff-view') {
+      const handleInput = (ch: string) => {
+        if (ch === 'r') {
+          setState('replacement-mode');
+        } else if (ch === 'q') {
+          process.exit(0);
+        }
+      };
+
+      process.stdin.on('data', (key) => {
+        handleInput(key.toString());
+      });
+
+      return () => {
+        process.stdin.removeAllListeners('data');
+      };
+    }
+  }, [state]);
+
   const handleReplacementsComplete = (reps: Map<string, string>) => {
     setReplacements(reps);
     setState('replacement-confirm');
@@ -72,11 +93,6 @@ export const AppInteractive: React.FC<AppInteractiveProps> = ({ originalFile, fo
         <Box marginTop={1}>
           <Text dimColor>Press 'r' to start replacement mode, or 'q' to quit</Text>
         </Box>
-
-        {/* Handle keyboard input for diff view */}
-        {useKeyboardInput(() => {
-          setState('replacement-mode');
-        })}
       </Box>
     );
   }
@@ -127,28 +143,3 @@ export const AppInteractive: React.FC<AppInteractiveProps> = ({ originalFile, fo
 
   return null;
 };
-
-/**
- * Simple keyboard input hook for diff view
- */
-function useKeyboardInput(onReplace: () => void): null {
-  useEffect(() => {
-    const handleInput = (ch: string) => {
-      if (ch === 'r') {
-        onReplace();
-      } else if (ch === 'q') {
-        process.exit(0);
-      }
-    };
-
-    process.stdin.on('data', (key) => {
-      handleInput(key.toString());
-    });
-
-    return () => {
-      process.stdin.removeAllListeners('data');
-    };
-  }, [onReplace]);
-
-  return null;
-}
