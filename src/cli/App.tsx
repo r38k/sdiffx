@@ -60,10 +60,7 @@ export const App: React.FC<AppProps> = ({ originalFile, formattedFile }) => {
             <DiffList entries={comparison.diffs.entries} maxLines={15} />
           </Box>
           <Box marginTop={1}>
-            <Text dimColor>
-              Use 'sdiffx -i' for the interactive TUI (global installs also expose the 'sdiffx-interactive'
-              alias) or see README for details
-            </Text>
+            <Text dimColor>Use 'sdiffx -i' for the interactive TUI or see README for details</Text>
           </Box>
         </>
       )}

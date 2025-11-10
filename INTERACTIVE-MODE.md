@@ -5,7 +5,7 @@
 sdiffxには2つのモードがあります：
 
 1. **通常モード** (`sdiffx`) - 差分を表示するのみ
-2. **インタラクティブモード** (`sdiffx -i` / `sdiffx-interactive`) - 差分表示 + 置換機能
+2. **インタラクティブモード** (`sdiffx -i`) - 差分表示 + 置換機能
 
 ## インタラクティブモードの起動
 
@@ -13,13 +13,12 @@ sdiffxには2つのモードがあります：
 node dist/index.js -i <original-file> <formatted-file>
 ```
 
-または、インストール後（エイリアス）：
+または、グローバルインストール後：
 
 ```bash
 sdiffx -i <original-file> <formatted-file>
-# 互換用: sdiffx-interactive <original-file> <formatted-file>
 ```
-> `sdiffx-interactive` エイリアスは npm などでグローバルインストールした場合に利用できます。
+> 任意で `alias sdiffx-interactive="sdiffx -i"` のようなカスタムエイリアスを作成することもできます。
 
 ## 使い方
 
@@ -157,7 +156,7 @@ node dist/index.js -i sample_extra_original.md sample_extra_formatted.md
 | 用途 | コマンド | 説明 |
 |------|---------|------|
 | 差分をさっと確認 | `sdiffx file1 file2` | 結果を表示するのみ |
-| 差分を確認して置換 | `sdiffx -i file1 file2` *(alias: `sdiffx-interactive`)* | 確認しながら適用 |
+| 差分を確認して置換 | `sdiffx -i file1 file2` | 確認しながら適用 |
 
 ## キーボードショートカット一覧
 

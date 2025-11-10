@@ -51,7 +51,7 @@ npm link
 これで、どのディレクトリからでも以下が使えます：
 ```bash
 sdiffx original.md formatted.md
-sdiffx -i original.md formatted.md      # またはエイリアス: sdiffx-interactive
+sdiffx -i original.md formatted.md
 ```
 
 登録解除: `npm uninstall -g sdiffx` または `npm unlink`

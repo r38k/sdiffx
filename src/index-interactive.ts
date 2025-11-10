@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Compatibility entry point for `sdiffx-interactive`.
+ * Compatibility entry point for an optional `sdiffx-interactive` alias.
  * Delegates to the main CLI with the interactive flag enabled.
  */
 

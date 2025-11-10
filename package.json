@@ -5,8 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "sdiffx": "dist/index.js",
-    "sdiffx-interactive": "dist/index-interactive.js"
+    "sdiffx": "dist/index.js"
   },
   "scripts": {
     "build": "tsgo --skipLibCheck",
