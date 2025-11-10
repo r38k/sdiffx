@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "sdiff": "dist/index.js"
+    "sdiff": "dist/index.js",
+    "sdiff-interactive": "dist/index-interactive.js"
   },
   "scripts": {
     "build": "tsc",
