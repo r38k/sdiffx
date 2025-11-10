@@ -9,6 +9,57 @@ export interface Replacement {
   lineNumber?: number;
 }
 
+export interface HistoryEntry {
+  type: 'added' | 'removed';
+  original: string;
+  formatted: string;
+  timestamp: number;
+}
+
+export interface HistoryRecord {
+  key: string;
+  entryIndex: number;
+  entry: HistoryEntry;
+}
+
+export class ReplacementHistory {
+  private stack: HistoryRecord[] = [];
+
+  push(record: HistoryRecord): void {
+    this.stack.push(record);
+  }
+
+  undo(): HistoryRecord | null {
+    if (this.stack.length === 0) {
+      return null;
+    }
+    return this.stack.pop() ?? null;
+  }
+
+  clear(): void {
+    this.stack = [];
+  }
+
+  size(): number {
+    return this.stack.length;
+  }
+
+  canUndo(): boolean {
+    return this.stack.length > 0;
+  }
+
+  getEntries(): HistoryRecord[] {
+    return [...this.stack];
+  }
+}
+
+export interface ReplacementInstruction {
+  type: 'added' | 'removed';
+  snippet: string;
+  anchor?: string;
+  anchorPosition?: 'before' | 'after';
+}
+
 /**
  * Apply replacements map to original text
  * Replaces instances of keys with values from the map
@@ -33,6 +84,43 @@ export function applyReplacements(text: string, replacements: Map<string, string
  */
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function serializeInstruction(instruction: ReplacementInstruction): string {
+  return JSON.stringify(instruction);
+}
+
+export function deserializeInstruction(payload: string): ReplacementInstruction {
+  try {
+    const parsed = JSON.parse(payload) as ReplacementInstruction;
+    if (!parsed || !parsed.type || !parsed.snippet) {
+      throw new Error('Invalid replacement instruction');
+    }
+    return {
+      anchorPosition: parsed.anchorPosition ?? 'after',
+      ...parsed,
+    };
+  } catch (err) {
+    throw new Error(
+      `Failed to parse replacement instruction: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
+export function findMatchingLine(text: string, needle: string): string | null {
+  if (!needle) {
+    return null;
+  }
+
+  const normalizedNeedle = needle.trim();
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    if (line.includes(normalizedNeedle)) {
+      return line;
+    }
+  }
+
+  return null;
 }
 
 /**
