@@ -3,6 +3,7 @@
  */
 
 import { DiffEntry, DiffResult, DiffType } from './types.js';
+import { normalizeLine } from '../utils/markdown.js';
 
 /**
  * Calculate longest common subsequence between two sequences
@@ -121,88 +122,127 @@ export function generateDiff(original: string[], formatted: string[]): DiffResul
 }
 
 /**
- * Simple Myers diff algorithm for better diff quality
+ * Calculate edit distance (Levenshtein) between two strings
+ * Returns a score from 0 (completely different) to 1 (identical)
+ */
+function calculateSimilarity(a: string, b: string): number {
+  // First normalize both strings for comparison
+  const normA = normalizeLine(a);
+  const normB = normalizeLine(b);
+
+  // Check normalized equality first
+  if (normA === normB) return 1;
+  if (normA.length === 0 || normB.length === 0) return 0;
+
+  const maxLen = Math.max(normA.length, normB.length);
+  let distance = 0;
+
+  // Simple character-based similarity for Japanese text
+  const minLen = Math.min(normA.length, normB.length);
+  for (let i = 0; i < minLen; i++) {
+    if (normA[i] !== normB[i]) {
+      distance++;
+    }
+  }
+  distance += Math.abs(normA.length - normB.length);
+
+  return 1 - distance / maxLen;
+}
+
+/**
+ * Find best matching line in target array based on similarity
+ */
+function findBestMatch(
+  needle: string,
+  haystack: string[],
+  startIdx: number = 0,
+): { index: number; similarity: number } | null {
+  let bestMatch = null;
+  let bestSimilarity = 0.5; // Minimum threshold
+
+  for (let i = startIdx; i < haystack.length; i++) {
+    const similarity = calculateSimilarity(needle, haystack[i]);
+    if (similarity > bestSimilarity) {
+      bestSimilarity = similarity;
+      bestMatch = { index: i, similarity };
+    }
+  }
+
+  return bestMatch;
+}
+
+/**
+ * Improved Myers diff algorithm with similarity matching
  */
 export function generateDiffMyers(original: string[], formatted: string[]): DiffResult {
   const entries: DiffEntry[] = [];
+  const usedFormattedIndices = new Set<number>();
 
-  // Use a simpler greedy approach: match consecutive identical strings
-  let origIdx = 0;
-  let formIdx = 0;
+  // Process each original line
+  for (let origIdx = 0; origIdx < original.length; origIdx++) {
+    const origLine = original[origIdx];
 
-  while (origIdx < original.length || formIdx < formatted.length) {
-    // Look for matching string
-    let matchFound = false;
-
-    if (origIdx < original.length && formIdx < formatted.length && original[origIdx] === formatted[formIdx]) {
-      entries.push({
-        type: 'unchanged',
-        content: original[origIdx],
-        lineNumber: origIdx + 1,
-      });
-      origIdx++;
-      formIdx++;
-      matchFound = true;
+    // Skip empty lines
+    if (origLine.trim() === '') {
+      continue;
     }
 
-    if (!matchFound) {
-      // Try to find the next match
-      let nextOrigMatch = -1;
-      let nextFormMatch = -1;
+    // Try exact match first
+    let matchIdx = -1;
+    for (let formIdx = 0; formIdx < formatted.length; formIdx++) {
+      if (!usedFormattedIndices.has(formIdx) && formatted[formIdx] === origLine) {
+        matchIdx = formIdx;
+        break;
+      }
+    }
 
-      for (let i = origIdx + 1; i < original.length; i++) {
-        if (original[i] === formatted[formIdx]) {
-          nextOrigMatch = i;
+    // If no exact match, try normalized match
+    if (matchIdx === -1) {
+      const normOrig = normalizeLine(origLine);
+      for (let formIdx = 0; formIdx < formatted.length; formIdx++) {
+        if (!usedFormattedIndices.has(formIdx) && normalizeLine(formatted[formIdx]) === normOrig) {
+          matchIdx = formIdx;
           break;
         }
       }
+    }
 
-      for (let j = formIdx + 1; j < formatted.length; j++) {
-        if (formatted[j] === original[origIdx]) {
-          nextFormMatch = j;
-          break;
-        }
+    // If still no match, try similarity match
+    if (matchIdx === -1) {
+      const bestMatch = findBestMatch(origLine, formatted);
+      if (bestMatch && !usedFormattedIndices.has(bestMatch.index)) {
+        matchIdx = bestMatch.index;
       }
+    }
 
-      // Prefer the closer match
-      if (nextOrigMatch !== -1 && (nextFormMatch === -1 || nextOrigMatch - origIdx <= nextFormMatch - formIdx)) {
-        // Mark everything in original until nextOrigMatch as removed
-        while (origIdx < nextOrigMatch) {
-          entries.push({
-            type: 'removed',
-            content: original[origIdx],
-            lineNumber: origIdx + 1,
-          });
-          origIdx++;
-        }
-      } else if (nextFormMatch !== -1) {
-        // Mark everything in formatted until nextFormMatch as added
-        while (formIdx < nextFormMatch) {
-          entries.push({
-            type: 'added',
-            content: formatted[formIdx],
-            lineNumber: formIdx + 1,
-          });
-          formIdx++;
-        }
-      } else {
-        // No more matches, mark remaining
-        while (origIdx < original.length) {
-          entries.push({
-            type: 'removed',
-            content: original[origIdx],
-            lineNumber: origIdx + 1,
-          });
-          origIdx++;
-        }
-        while (formIdx < formatted.length) {
-          entries.push({
-            type: 'added',
-            content: formatted[formIdx],
-            lineNumber: formIdx + 1,
-          });
-          formIdx++;
-        }
+    if (matchIdx !== -1) {
+      // Found a match
+      entries.push({
+        type: 'unchanged',
+        content: origLine,
+        lineNumber: origIdx + 1,
+      });
+      usedFormattedIndices.add(matchIdx);
+    } else {
+      // No match found - line was removed
+      entries.push({
+        type: 'removed',
+        content: origLine,
+        lineNumber: origIdx + 1,
+      });
+    }
+  }
+
+  // Add all unmatched formatted lines as added
+  for (let formIdx = 0; formIdx < formatted.length; formIdx++) {
+    if (!usedFormattedIndices.has(formIdx)) {
+      const formLine = formatted[formIdx];
+      if (formLine.trim() !== '') {
+        entries.push({
+          type: 'added',
+          content: formLine,
+          lineNumber: formIdx + 1,
+        });
       }
     }
   }

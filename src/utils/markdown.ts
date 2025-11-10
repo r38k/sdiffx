@@ -96,3 +96,16 @@ export function normalizeForComparison(text: string): string {
   normalized = normalized.replace(/[ \t]+/g, ' ').trim();
   return normalized;
 }
+
+/**
+ * Normalize a single line for better matching
+ * Removes trailing punctuation and extra whitespace
+ */
+export function normalizeLine(line: string): string {
+  let normalized = line.trim();
+  // Remove trailing punctuation (。, 、, etc.)
+  normalized = normalized.replace(/[。、，：；？！]+$/, '');
+  // Remove extra whitespace
+  normalized = normalized.replace(/\s+/g, ' ').trim();
+  return normalized;
+}
