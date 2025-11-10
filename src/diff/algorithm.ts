@@ -172,11 +172,13 @@ function findBestMatch(
 }
 
 /**
- * Improved Myers diff algorithm with similarity matching
+ * Improved Myers diff algorithm with positional awareness
+ * Maintains order by processing both arrays in parallel
  */
 export function generateDiffMyers(original: string[], formatted: string[]): DiffResult {
   const entries: DiffEntry[] = [];
   const usedFormattedIndices = new Set<number>();
+  let formIdx = 0;
 
   // Process each original line
   for (let origIdx = 0; origIdx < original.length; origIdx++) {
@@ -187,11 +189,15 @@ export function generateDiffMyers(original: string[], formatted: string[]): Diff
       continue;
     }
 
-    // Try exact match first
+    // Try to find the best match starting from current formIdx position
     let matchIdx = -1;
-    for (let formIdx = 0; formIdx < formatted.length; formIdx++) {
-      if (!usedFormattedIndices.has(formIdx) && formatted[formIdx] === origLine) {
-        matchIdx = formIdx;
+    let bestSimilarity = -1;
+
+    // First, try exact match
+    for (let fIdx = formIdx; fIdx < formatted.length; fIdx++) {
+      if (!usedFormattedIndices.has(fIdx) && formatted[fIdx] === origLine) {
+        matchIdx = fIdx;
+        bestSimilarity = 1.0;
         break;
       }
     }
@@ -199,30 +205,52 @@ export function generateDiffMyers(original: string[], formatted: string[]): Diff
     // If no exact match, try normalized match
     if (matchIdx === -1) {
       const normOrig = normalizeLine(origLine);
-      for (let formIdx = 0; formIdx < formatted.length; formIdx++) {
-        if (!usedFormattedIndices.has(formIdx) && normalizeLine(formatted[formIdx]) === normOrig) {
-          matchIdx = formIdx;
+      for (let fIdx = formIdx; fIdx < formatted.length; fIdx++) {
+        if (!usedFormattedIndices.has(fIdx) && normalizeLine(formatted[fIdx]) === normOrig) {
+          matchIdx = fIdx;
+          bestSimilarity = 1.0;
           break;
         }
       }
     }
 
-    // If still no match, try similarity match
+    // If still no match, try similarity match (only forward looking)
     if (matchIdx === -1) {
-      const bestMatch = findBestMatch(origLine, formatted);
-      if (bestMatch && !usedFormattedIndices.has(bestMatch.index)) {
-        matchIdx = bestMatch.index;
+      for (let fIdx = formIdx; fIdx < Math.min(formIdx + 10, formatted.length); fIdx++) {
+        if (!usedFormattedIndices.has(fIdx)) {
+          const similarity = calculateSimilarity(origLine, formatted[fIdx]);
+          if (similarity > bestSimilarity && similarity > 0.6) {
+            bestSimilarity = similarity;
+            matchIdx = fIdx;
+          }
+        }
       }
     }
 
     if (matchIdx !== -1) {
-      // Found a match
+      // Found a match - output any unmatched formatted lines before this match
+      while (formIdx < matchIdx && formIdx < formatted.length) {
+        if (!usedFormattedIndices.has(formIdx)) {
+          const formLine = formatted[formIdx];
+          if (formLine.trim() !== '') {
+            entries.push({
+              type: 'added',
+              content: formLine,
+              lineNumber: formIdx + 1,
+            });
+          }
+        }
+        formIdx++;
+      }
+
+      // Now output the matched line
       entries.push({
         type: 'unchanged',
         content: origLine,
         lineNumber: origIdx + 1,
       });
       usedFormattedIndices.add(matchIdx);
+      formIdx = matchIdx + 1;
     } else {
       // No match found - line was removed
       entries.push({
@@ -233,15 +261,15 @@ export function generateDiffMyers(original: string[], formatted: string[]): Diff
     }
   }
 
-  // Add all unmatched formatted lines as added
-  for (let formIdx = 0; formIdx < formatted.length; formIdx++) {
-    if (!usedFormattedIndices.has(formIdx)) {
-      const formLine = formatted[formIdx];
+  // Add any remaining unmatched formatted lines
+  for (let fIdx = formIdx; fIdx < formatted.length; fIdx++) {
+    if (!usedFormattedIndices.has(fIdx)) {
+      const formLine = formatted[fIdx];
       if (formLine.trim() !== '') {
         entries.push({
           type: 'added',
           content: formLine,
-          lineNumber: formIdx + 1,
+          lineNumber: fIdx + 1,
         });
       }
     }
