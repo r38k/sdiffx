@@ -3,7 +3,7 @@
 # Test script for all sample file pairs
 
 echo "================================"
-echo "sdiff Sample Testing Suite"
+echo "sdiffx Sample Testing Suite"
 echo "================================"
 echo ""
 

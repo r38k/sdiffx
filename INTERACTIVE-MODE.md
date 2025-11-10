@@ -2,10 +2,10 @@
 
 ## 概要
 
-sdiffには2つのモードがあります：
+sdiffxには2つのモードがあります：
 
-1. **通常モード** (`sdiff`) - 差分を表示するのみ
-2. **インタラクティブモード** (`sdiff -i` / `sdiff-interactive`) - 差分表示 + 置換機能
+1. **通常モード** (`sdiffx`) - 差分を表示するのみ
+2. **インタラクティブモード** (`sdiffx -i` / `sdiffx-interactive`) - 差分表示 + 置換機能
 
 ## インタラクティブモードの起動
 
@@ -16,10 +16,10 @@ node dist/index.js -i <original-file> <formatted-file>
 または、インストール後（エイリアス）：
 
 ```bash
-sdiff -i <original-file> <formatted-file>
-# 互換用: sdiff-interactive <original-file> <formatted-file>
+sdiffx -i <original-file> <formatted-file>
+# 互換用: sdiffx-interactive <original-file> <formatted-file>
 ```
-> `sdiff-interactive` エイリアスは npm などでグローバルインストールした場合に利用できます。
+> `sdiffx-interactive` エイリアスは npm などでグローバルインストールした場合に利用できます。
 
 ## 使い方
 
@@ -28,7 +28,7 @@ sdiff -i <original-file> <formatted-file>
 起動すると、まず差分が表示されます。
 
 ```
- Static Diff Checker - sdiff (Interactive Mode)
+ Static Diff Checker - sdiffx (Interactive Mode)
 
  Original: sample_original.md → Formatted: sample_formatted.md
 
@@ -156,8 +156,8 @@ node dist/index.js -i sample_extra_original.md sample_extra_formatted.md
 
 | 用途 | コマンド | 説明 |
 |------|---------|------|
-| 差分をさっと確認 | `sdiff file1 file2` | 結果を表示するのみ |
-| 差分を確認して置換 | `sdiff -i file1 file2` *(alias: `sdiff-interactive`)* | 確認しながら適用 |
+| 差分をさっと確認 | `sdiffx file1 file2` | 結果を表示するのみ |
+| 差分を確認して置換 | `sdiffx -i file1 file2` *(alias: `sdiffx-interactive`)* | 確認しながら適用 |
 
 ## キーボードショートカット一覧
 
@@ -188,7 +188,7 @@ node dist/index.js -i sample_extra_original.md sample_extra_formatted.md
 for original in *_original.md; do
   formatted="${original/_original.md/_formatted.md}"
   echo "Processing $original ↔ $formatted"
-  sdiff -i "$original" "$formatted"
+  sdiffx -i "$original" "$formatted"
 done
 ```
 
@@ -198,10 +198,10 @@ done
 
 ```bash
 # 1. 差分を確認
-sdiff original.md formatted.md
+sdiffx original.md formatted.md
 
 # 2. インタラクティブモードで置換
-sdiff -i original.md formatted.md
+sdiffx -i original.md formatted.md
 ```
 
 ## トラブルシューティング

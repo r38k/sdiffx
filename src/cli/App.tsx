@@ -44,7 +44,7 @@ export const App: React.FC<AppProps> = ({ originalFile, formattedFile }) => {
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Text bold>Static Diff Checker - sdiff</Text>
+      <Text bold>Static Diff Checker - sdiffx</Text>
       <Box marginY={1}>
         <Text dimColor>
           Original: {originalFile} → Formatted: {formattedFile}
@@ -61,7 +61,7 @@ export const App: React.FC<AppProps> = ({ originalFile, formattedFile }) => {
           </Box>
           <Box marginTop={1}>
             <Text dimColor>
-              Use 'sdiff -i' for the interactive TUI (global installs also expose the 'sdiff-interactive'
+              Use 'sdiffx -i' for the interactive TUI (global installs also expose the 'sdiffx-interactive'
               alias) or see README for details
             </Text>
           </Box>

@@ -1,187 +1,232 @@
-# sdiff - Static Diff Checking Tool
+# sdiffx - Static Diff Checking Tool
 
-社内チャットボットが参照する用のドキュメントを整備するためのツール
+**PDFやExcelから抽出したテキストをLLMで整形したときに、意図しない変更がないか確認するツール**
 
-## 概要
+完全vibe codingで作りました。
+動作確認はほどほどにしかしてません。
 
-PDFやExcelから抽出したテキストをLLMで整形するとき、意図しない変更がないか確認するツールです。LLMの確率的な出力によってコンテンツが変更されることがあるため、それを検知できます。
+---
 
-## 要件（実装済み）
+## 使い方
 
-- ✅ 文字列の静的diff検査
-- ✅ 二つのテキストファイル(mdを想定)を読む
-- ✅ ファイル内のテキストを文単位でdiffを取る
-- ✅ Markdownシンタックスを無視した比較
-- ✅ 不足や過剰な文字列を出力
-
-## インストール
+### インストール
 
 ```bash
 npm install
 npm run build
 ```
 
-### `sdiff` コマンドを利用可能にする
+### 基本的な使い方
 
-ローカルでビルドした CLI を `sdiff` / `sdiff-interactive` として呼び出したい場合は、リポジトリ直下で次を実行してください。
+**差分を確認するだけ**
+```bash
+node dist/index.js original.md formatted.md
+```
+
+**差分を確認して修正**
+```bash
+node dist/index.js -i original.md formatted.md
+```
+
+### インタラクティブモードの流れ
+
+1. 差分を表示
+2. 置換モードを選択：
+   - `i`: 確認後置換（1件ずつ確認）
+   - `b`: 全置換（全て一括適用）
+3. ファイルが自動で修正される
+
+---
+
+## グローバルインストール（オプション）
+
+コマンドラインで `sdiffx` コマンドを直接使えるようにします：
 
 ```bash
-# グローバルにインストール（現在のフォルダを登録）
 npm install -g .
-
-# 開発用途なら npm link でシンボリックリンクを作成
+# または
 npm link
 ```
 
-成功すると `PATH` 上にコマンドが追加され、どのディレクトリでも `sdiff original.md formatted.md` や `sdiff -i original.md formatted.md` を実行できます。不要になった場合は `npm uninstall -g sdiff`（または `npm unlink`）で登録を解除してください。
-
-## 使用方法
-
-### 1. 通常モード（Diff表示のみ）
-
+これで、どのディレクトリからでも以下が使えます：
 ```bash
-node dist/index.js <original-file> <formatted-file>
+sdiffx original.md formatted.md
+sdiffx -i original.md formatted.md      # またはエイリアス: sdiffx-interactive
 ```
 
-差分を表示するだけで、修正はしません。
+登録解除: `npm uninstall -g sdiffx` または `npm unlink`
 
-### 2. インタラクティブモード（Diff + 置換）
+---
+
+## このツールでできること
+
+LLMがテキストを整形した時、以下のような問題を検知します：
+
+- ✅ 予期しない文が追加されている
+- ✅ 大切な文が削除されている
+- ✅ Markdown 形式の変更（自動的に無視）
+
+**比較方法**：
+- Markdown シンタックス（`#`、`**` など）は無視
+- 文単位で差分をチェック
+- 空白・改行を基準に分割
+
+---
+
+## サンプルで試す
 
 ```bash
-node dist/index.js -i <original-file> <formatted-file>
-# 互換エイリアス: node dist/index-interactive.js <original-file> <formatted-file>
-```
-
-> npmなどでグローバルインストールしている場合は `sdiff -i <original-file> <formatted-file>` や互換の
-> `sdiff-interactive <original-file> <formatted-file>` を直接呼び出せます。
-
-差分を確認してから、以下が選択できます：
-- **Interactive**: 1つずつ確認しながら適用
-- **Batch**: すべての変更を一括適用
-
-詳細は [INTERACTIVE-MODE.md](./INTERACTIVE-MODE.md) を参照
-
-### 例
-
-```bash
-# 基本的な使用例
-node dist/index.js sample_original.md sample_formatted.md
-
-# インタラクティブモード
-node dist/index.js -i sample_original.md sample_formatted.md
-
-# テストサンプルを実行
+# サンプルテストを実行
 ./test-all-samples.sh
 ```
-> グローバルインストール済みなら `sdiff -i sample_original.md sample_formatted.md` も同様に利用できます。
 
-## サンプルファイル
+3つのサンプルシナリオが含まれています：
 
-3つのシナリオを示すサンプルファイルが付属しています：
+| サンプル | 説明 |
+|---------|------|
+| `sample_original.md` / `sample_formatted.md` | 整形による見出し追加 |
+| `sample_missing_original.md` / `sample_missing_formatted.md` | 新しい文が追加 |
+| `sample_extra_original.md` / `sample_extra_formatted.md` | 冗長な文が削除 |
 
-### 1. Formatting Changes (整形による変化)
-```bash
-node dist/index.js sample_original.md sample_formatted.md
+---
+
+## インタラクティブモード（詳細）
+
+差分を確認してから修正したい場合は `sdiffx -i` を使用します。
+
+### 確認後置換モード（推奨）
+
+1つずつ確認しながら適用します：
+
 ```
-- 元のテキスト: 句点なし、見出しなし
-- 整形後のテキスト: 句点あり、見出しが追加
-- **結果**: 新しいセクション見出しが4つ追加されている（実コンテンツは変わっていない）
+確認後置換モード
+1/3 完了 ・ 取り消し可能: 0
 
-### 2. Added Content (コンテンツ追加)
-```bash
-node dist/index.js sample_missing_original.md sample_missing_formatted.md
++ このテキストを追加しますか？
+y: はい / n: スキップ / u: 1つ戻る / q: キャンセル
 ```
-- 元のテキスト: 簡潔
-- 整形後のテキスト: 追加情報が挿入
-- **結果**: 新しい文が2つ追加
 
-### 3. Removed Content (コンテンツ削除)
-```bash
-node dist/index.js sample_extra_original.md sample_extra_formatted.md
+キー操作：
+- `y`: この変更を適用
+- `n`: スキップ
+- `u`: 直前の変更を取り消し
+- `q`: 終了
+
+### 全置換モード
+
+すべての差分を一括で適用します。確認プロセスをスキップします。
+
+### 最終確認画面
+
+すべての変更を選択後、ファイル保存前に一覧で確認できます：
+
 ```
-- 元のテキスト: 詳細な内容
-- 整形後のテキスト: 冗長部分が削除
-- **結果**: 削除された文が3つ
+置換内容の最終確認
+モード: 確認後置換 ・ 選択済み: 2/3
+
+置換リスト
+- このテキストを削除
++ このテキストを追加
+```
+
+キー操作：
+- `s`: 置換を保存（ファイルを更新）
+- `u`: 直前の置換を取り消し
+- `q`: 終了（保存しない）
+
+---
 
 ## 出力形式
 
-### CLI表示
-- **Diff Summary**: 追加/削除/変更なしの統計情報
-- **Differences**: 実際の差分内容を表示
-  - `+` : 追加された行
-  - `-` : 削除された行
-  - スペース: 変わらない行
+### Diff Summary（統計）
 
-### 統計情報
 ```
 Total entries: 14
-Added: 4
+Added: 2
 Removed: 0
-Unchanged: 10
+Unchanged: 12
 ```
 
-## アルゴリズム
+### Differences（差分一覧）
 
-### マッチング戦略（3段階）
+```
++ 追加された行
+- 削除された行
+  変わらない行
+```
+
+---
+
+## 技術的な詳細
+
+### テキスト処理の流れ
+
+1. Markdown シンタックスを削除（`#`、`**`、`*` など）
+2. 空白・改行を基準に文単位で分割
+3. 空行はスキップ
+4. 文の序列から差分を抽出
+
+### マッチングアルゴリズム
+
+複数の戦略で最適な対応行を検出：
 
 1. **完全一致**: 元の行と整形後の行が完全に一致
-2. **正規化一致**: 末尾の句点を除いて一致（例：`文です` vs `文です。`）
+2. **正規化一致**: 末尾の句点を除いて一致
 3. **類似度マッチング**: 編集距離ベースで類似した行をマッチ
 
-### テキスト処理
-
-1. Markdownシンタックスを削除（`#`, `**`, `*`, など）
-2. 空白・改行を基準に文単位で分割
-3. 空行はスキップ（比較対象から除外）
+---
 
 ## 開発
 
 ### テスト実行
 
 ```bash
-npm test           # ユニットテスト実行
-./test-all-samples.sh  # サンプルテスト実行
+npm test                  # ユニットテスト
+./test-all-samples.sh     # サンプルテスト
 ```
 
 ### ビルド
 
 ```bash
-npm run build      # TypeScript → JavaScript
-npm run lint       # ESLint実行
+npm run build             # TypeScript → JavaScript
+npm run lint              # ESLint実行
+npm run dev               # 開発モード（ts-node）
 ```
+
+---
 
 ## 制限事項
 
-- 現在の実装は文単位での比較
-- 文字単位での差分には未対応
+- 現在は文単位での比較（文字単位差分は未対応）
 - 大規模ドキュメント（100MB+）は未最適化
 
-## 実装済みの機能
-
-### 置換機能（実装済み）
-
-```typescript
-// Interactive mode: 1つずつ確認
-// Batch mode: 一括置換
-```
-
-詳細は `src/cli/components/InteractiveReplacer.tsx` と `src/diff/replacement.ts` を参照
-
-## 今後の機能
-
-- [ ] インタラクティブモード（TUI）での差分確認の統合
-- [ ] 複数ファイルの一括処理
-- [ ] JSON出力フォーマット
-- [ ] 差分レポートの生成
-- [ ] 置換結果のファイル出力
+---
 
 ## 注意点
 
-- 整形前の文章はMarkdownシンタックスが入っていない想定
-- 整形後の文章はシンタックス（#など）が入る想定
-- これらの違いは比較時に無視される
+- 整形前のファイルは Markdown シンタックスなしを想定
+- 整形後のファイルは Markdown シンタックスありを想定
+- この違いは比較時に自動的に無視される
 
-## その他コンテキスト
+---
 
-- 対象となる文章は様々な文書(規約や設計書など)になるため，単純に「。」等で区切ることはできない
-- 基本は空白や改行をベースで区切られる
+## トラブルシューティング
+
+### `sdiffx` コマンドが見つからない
+
+```bash
+# 再インストール
+npm install -g .
+```
+
+### ファイル書き込み権限エラー
+
+ファイルの書き込み権限を確認してください：
+
+```bash
+ls -la original.md formatted.md
+```
+
+### 差分が多すぎて確認が大変
+
+確認後置換モードで `n` キーでスキップできます。最終確認画面で `u` キーで取り消しも可能です。

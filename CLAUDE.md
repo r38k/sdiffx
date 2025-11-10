@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**sdiff** is a static diff checking tool designed to validate text integrity when documents are processed by LLMs. The primary use case is comparing text before and after LLM formatting (from PDFs/Excel to markdown) to ensure no unintended changes were made.
+**sdiffx** is a static diff checking tool designed to validate text integrity when documents are processed by LLMs. The primary use case is comparing text before and after LLM formatting (from PDFs/Excel to markdown) to ensure no unintended changes were made.
 
 ### Key Implementation Details
 - **Language**: TypeScript with ESM modules
@@ -45,11 +45,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm install          # Install dependencies
-npm run build        # Compile TypeScript to dist/
+npm run build        # Compile TypeScript to dist/ using tsgo
 npm test             # Run Jest test suite
-npm run lint         # Run ESLint (if configured)
-npm run dev          # Run ts-node directly (if configured)
-node dist/index.js <file1> <file2>  # Run CLI
+npm run lint         # Run ESLint
+npm run dev          # Run with tsgo directly
+npm start            # Run compiled CLI
+npm run lsmcp        # Launch lsmcp symbol indexing tool
+node dist/index.js <file1> <file2>  # Run CLI directly
 ```
 
 ## Testing
@@ -84,10 +86,12 @@ src/
 
 ## Configuration Notes
 
+- **Build Tool**: Uses `tsgo` for TypeScript compilation with `--skipLibCheck` flag
 - **tsconfig.json**: Uses `moduleResolution: "nodenext"` and `module: "NodeNext"` for ESM
 - **package.json**: Configured with `"type": "module"` for ESM
 - **Import Statements**: Must include `.js` extension for relative imports (ESM requirement)
 - **Jest Configuration**: Uses moduleNameMapper to map `.js` extensions
+- **Development Tools**: Uses `@mizchi/lsmcp` for symbol indexing and codebase navigation
 
 ## Known Limitations and TODO Items
 
@@ -103,9 +107,28 @@ src/
 - For typical documents (1-100K sentences), performance is acceptable
 - Large documents may benefit from incremental diff or sampling
 
+## CI/CD Pipeline
+
+The project uses **GitHub Actions** for continuous integration:
+
+- **Workflow File**: `.github/workflows/ci.yml`
+- **Triggers**: Runs on push to `main` and `develop` branches, and on pull requests
+- **Matrix Testing**: Tests on Node.js 18.x and 20.x
+- **Steps**:
+  1. Checkout code
+  2. Setup Node.js with npm cache
+  3. Install dependencies (`npm ci`)
+  4. Run linter (`npm run lint`)
+  5. Run tests (`npm test`)
+  6. Build project (`npm run build`)
+  7. Verify CLI functionality
+
+Pull requests must pass all CI checks before merging.
+
 ## Debugging Tips
 
 - Use `npm run build` to check for TypeScript errors before running
 - Check markdown stripping is working: test with `# Header` → should become `Header`
 - For diff issues, add temporary logging in `src/diff/algorithm.ts`
 - Run single test file: `npm test -- src/utils/markdown.test.ts --verbose`
+- Use `npm run lsmcp` to index symbols and improve IDE support

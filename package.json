@@ -1,12 +1,12 @@
 {
-  "name": "sdiff",
+  "name": "sdiffx",
   "version": "0.1.0",
   "description": "Static diff checking tool for document validation",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "sdiff": "dist/index.js",
-    "sdiff-interactive": "dist/index-interactive.js"
+    "sdiffx": "dist/index.js",
+    "sdiffx-interactive": "dist/index-interactive.js"
   },
   "scripts": {
     "build": "tsgo --skipLibCheck",

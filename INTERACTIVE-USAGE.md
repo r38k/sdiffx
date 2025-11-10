@@ -5,8 +5,8 @@
 インタラクティブモードは**対話型のターミナル環境でのみ動作**します。
 
 ❌ **動作しない環境:**
-- パイプ経由の入力 (`echo "r" | sdiff -i ...`)
-- リダイレクト (`< input.txt sdiff -i ...`)
+- パイプ経由の入力 (`echo "r" | sdiffx -i ...`)
+- リダイレクト (`< input.txt sdiffx -i ...`)
 - GitHub Actions などの自動化環境
 - SSH経由の非TTY接続
 
@@ -27,7 +27,7 @@ node dist/index.js -i sample_missing_original.md sample_missing_formatted.md
 すると、以下が表示されます：
 
 ```
- Static Diff Checker - sdiff (Interactive Mode)
+ Static Diff Checker - sdiffx (Interactive Mode)
 
  Original: sample_missing_original.md → Formatted: sample_missing_formatted.md
 

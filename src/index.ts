@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Main entry point for sdiff CLI
+ * Main entry point for sdiffx CLI
  */
 
 import fs from 'node:fs';
@@ -16,7 +16,7 @@ type CliArgs = {
 };
 
 const printUsage = (code = 1) => {
-  console.error('Usage: sdiff [-i|--interactive] <original-file> <formatted-file>');
+  console.error('Usage: sdiffx [-i|--interactive] <original-file> <formatted-file>');
   console.error('');
   console.error('Options:');
   console.error('  -i, --interactive   Enable interactive TUI mode');

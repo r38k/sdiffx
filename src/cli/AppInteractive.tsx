@@ -241,7 +241,7 @@ export const AppInteractive: React.FC<AppInteractiveProps> = ({ originalFile, fo
   if (state === 'diff-view' && comparison) {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text bold>Static Diff Checker - sdiff (確認後置換対応)</Text>
+        <Text bold>Static Diff Checker - sdiffx (確認後置換対応)</Text>
         <Box marginY={1}>
           <Text dimColor>
             Original: {originalFile} → Formatted: {formattedFile}
