@@ -13,9 +13,10 @@
     "declarationMap": true,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "jsx": "react",
+    "jsx": "react-jsx",
     "moduleResolution": "nodenext",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

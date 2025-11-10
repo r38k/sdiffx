@@ -1,4 +1,4 @@
-import { stripMarkdown, splitBySentence, normalizeForComparison } from './markdown';
+import { stripMarkdown, splitBySentence, normalizeForComparison } from './markdown.js';
 
 describe('Markdown Utilities', () => {
   describe('stripMarkdown', () => {

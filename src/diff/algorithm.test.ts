@@ -1,4 +1,4 @@
-import { generateDiffMyers } from './algorithm';
+import { generateDiffMyers } from './algorithm.js';
 
 describe('Diff Algorithm', () => {
   describe('generateDiffMyers', () => {

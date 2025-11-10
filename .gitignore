@@ -7,3 +7,6 @@ dist/
 coverage/
 .vscode/
 .idea/
+
+# lsmcp cache
+.lsmcp/cache
