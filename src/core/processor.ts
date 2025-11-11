@@ -3,9 +3,9 @@
  */
 
 import * as fs from 'fs';
-import { stripMarkdown, splitBySentence } from '../utils/markdown.js';
+import { extractParagraphMappings, normalizeDocumentText, ParagraphMapping } from '../utils/markdown.js';
 import { generateDiffMyers } from '../diff/algorithm.js';
-import { FileComparison } from '../diff/types.js';
+import { DiffEntry, FileComparison } from '../diff/types.js';
 import { deserializeInstruction, ReplacementInstruction } from '../diff/replacement.js';
 
 /**
@@ -29,22 +29,71 @@ export function compareFiles(originalPath: string, formattedPath: string): FileC
  * Compare two text strings and generate diff
  */
 export function compareTexts(originalText: string, formattedText: string): FileComparison {
-  // Strip markdown from formatted text
-  const originalCleaned = stripMarkdown(originalText);
-  const formattedCleaned = stripMarkdown(formattedText);
+  const originalParagraphs = extractParagraphMappings(originalText);
+  const formattedParagraphs = extractParagraphMappings(formattedText);
 
-  // Split into sentences
-  const originalSentences = splitBySentence(originalCleaned);
-  const formattedSentences = splitBySentence(formattedCleaned);
+  const normalizedOriginal = originalParagraphs.map((p) => p.normalized).join('\n');
+  const normalizedFormatted = formattedParagraphs.map((p) => p.normalized).join('\n');
 
-  // Generate diff
-  const diffs = generateDiffMyers(originalSentences, formattedSentences);
+  const rawDiffs = generateDiffMyers(normalizedOriginal, normalizedFormatted);
+  const hydratedEntries = hydrateDiffEntries(rawDiffs.entries, originalParagraphs, formattedParagraphs);
+  const diffs = { entries: hydratedEntries, summary: rawDiffs.summary };
 
   return {
     original: originalText,
     formatted: formattedText,
     diffs,
   };
+}
+
+function createParagraphIndex(paragraphs: ParagraphMapping[]): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  for (const block of paragraphs) {
+    if (!block.normalized) {
+      continue;
+    }
+    const existing = map.get(block.normalized);
+    if (existing) {
+      existing.push(block.display || block.normalized);
+    } else {
+      map.set(block.normalized, [block.display || block.normalized]);
+    }
+  }
+  return map;
+}
+
+function takeDisplay(map: Map<string, string[]>, key: string): string | null {
+  const queue = map.get(key);
+  if (!queue || queue.length === 0) {
+    return null;
+  }
+  const value = queue.shift();
+  return value ?? null;
+}
+
+function hydrateDiffEntries(
+  entries: DiffEntry[],
+  originalParagraphs: ParagraphMapping[],
+  formattedParagraphs: ParagraphMapping[],
+): DiffEntry[] {
+  const originalMap = createParagraphIndex(originalParagraphs);
+  const formattedMap = createParagraphIndex(formattedParagraphs);
+
+  return entries.map((entry) => {
+    const key = entry.content;
+    let display: string | null = null;
+    if (entry.type === 'added') {
+      display = takeDisplay(formattedMap, key);
+    } else if (entry.type === 'removed') {
+      display = takeDisplay(originalMap, key);
+    } else {
+      display = takeDisplay(formattedMap, key) ?? takeDisplay(originalMap, key);
+    }
+    return {
+      ...entry,
+      content: display && display.length > 0 ? display : entry.content,
+    };
+  });
 }
 
 /**

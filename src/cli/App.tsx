@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { compareFiles } from '../core/processor.js';
 import { Summary } from './components/Summary.js';
-import { DiffList } from './components/DiffList.js';
+import { DiffPager } from './components/DiffPager.js';
 import { FileComparison } from '../diff/types.js';
 
 interface AppProps {
@@ -54,16 +54,18 @@ export const App: React.FC<AppProps> = ({ originalFile, formattedFile }) => {
         <>
           <Summary diffs={comparison.diffs} />
           <Box marginTop={1} flexDirection="column" borderStyle="single" borderColor="cyan" padding={1}>
-            <Box marginBottom={1}>
-              <Text bold>Differences:</Text>
-            </Box>
-            <DiffList entries={comparison.diffs.entries} maxLines={15} />
+            <DiffPager
+              entries={comparison.diffs.entries}
+              height={25}
+              enableQuit
+              onExit={() => process.exit(0)}
+            />
           </Box>
           <Box marginTop={1}>
-            <Text dimColor>Use 'sdiffx -i' for the interactive TUI or see README for details</Text>
+            <Text dimColor>Press q to exit, or use 'sdiffx -i' for interactive replacement mode</Text>
           </Box>
-        </>
-      )}
+       </>
+     )}
     </Box>
   );
 };

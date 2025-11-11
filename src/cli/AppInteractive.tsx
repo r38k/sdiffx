@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { compareFiles, applyReplacementsToFile } from '../core/processor.js';
 import { Summary } from './components/Summary.js';
-import { DiffList } from './components/DiffList.js';
+import { DiffPager } from './components/DiffPager.js';
 import { InteractiveReplacer, ReplacementSessionResult } from './components/InteractiveReplacer.js';
 import { FileComparison } from '../diff/types.js';
 import { ReplacementHistory } from '../diff/replacement.js';
@@ -249,10 +249,7 @@ export const AppInteractive: React.FC<AppInteractiveProps> = ({ originalFile, fo
         </Box>
         <Summary diffs={comparison.diffs} />
         <Box marginTop={1} flexDirection="column" borderStyle="single" borderColor="cyan" padding={1}>
-          <Box marginBottom={1}>
-            <Text bold>Differences:</Text>
-          </Box>
-          <DiffList entries={comparison.diffs.entries} maxLines={15} />
+          <DiffPager entries={comparison.diffs.entries} height={25} />
         </Box>
         {statusMessage && (
           <Box marginTop={1}>

@@ -1,4 +1,11 @@
-import { stripMarkdown, splitBySentence, normalizeForComparison } from './markdown.js';
+import {
+  stripMarkdown,
+  splitBySentence,
+  normalizeForComparison,
+  normalizeLine,
+  normalizeDocumentText,
+  extractParagraphMappings,
+} from './markdown.js';
 
 describe('Markdown Utilities', () => {
   describe('stripMarkdown', () => {
@@ -66,6 +73,50 @@ describe('Markdown Utilities', () => {
       expect(result).toContain('Header');
       expect(result).toContain('link');
       expect(result).toContain('code');
+    });
+  });
+
+  describe('normalizeLine', () => {
+    it('should convert full-width alphanumerics and hyphens', () => {
+      expect(normalizeLine('ＤＭＳＯＵ‐０２')).toBe('DMSOU-02');
+    });
+
+    it('should collapse various whitespace characters', () => {
+      expect(normalizeLine('第　１章   総　則')).toBe('第1章 総則');
+    });
+
+    it('should remove trailing punctuation after normalization', () => {
+      expect(normalizeLine('１４日。')).toBe('14日');
+    });
+  });
+
+  describe('normalizeDocumentText', () => {
+    it('should collapse soft line breaks inside paragraphs', () => {
+      const input = 'AI に\nより⽬指すべき社会\n及び...';
+      expect(normalizeDocumentText(input)).toBe('AI に より⽬指すべき社会 及び...');
+    });
+
+    it('should keep paragraph boundaries with double newlines', () => {
+      const input = '段落1\n続き\n\n段落2';
+      expect(normalizeDocumentText(input)).toBe('段落1 続き\n段落2');
+    });
+
+    it('should strip markdown before normalization', () => {
+      const input = '# 見出し\n\n本文 **強調**';
+      expect(normalizeDocumentText(input)).toBe('見出し\n本文 強調');
+    });
+  });
+
+  describe('extractParagraphMappings', () => {
+    it('should retain markdown for display but normalize for matching', () => {
+      const result = extractParagraphMappings('# 見出し\n\n本文 **強調**');
+      expect(result[0]).toEqual({ normalized: '見出し', display: '# 見出し' });
+      expect(result[1]).toEqual({ normalized: '本文 強調', display: '本文 **強調**' });
+    });
+
+    it('should skip empty blocks', () => {
+      const result = extractParagraphMappings(' \n\n  ');
+      expect(result.length).toBe(0);
     });
   });
 });

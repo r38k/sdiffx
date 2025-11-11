@@ -98,13 +98,73 @@ export function normalizeForComparison(text: string): string {
 }
 
 /**
+ * Prepare a document for diffing by collapsing soft line breaks and stripping markdown
+ */
+interface ParagraphBlock {
+  normalized: string;
+  display: string;
+}
+
+function splitIntoBlocks(text: string): string[] {
+  const normalizedBreaks = text.replace(/\r\n?|\f/g, '\n');
+  return normalizedBreaks.split(/\n{2,}/);
+}
+
+function cleanIntraLineWhitespace(block: string): string {
+  return block.replace(/\s*\n\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function buildParagraphBlocks(text: string): ParagraphBlock[] {
+  const blocks: ParagraphBlock[] = [];
+  for (const rawBlock of splitIntoBlocks(text)) {
+    const trimmed = rawBlock.trim();
+    if (!trimmed) {
+      continue;
+    }
+    const normalized = cleanIntraLineWhitespace(stripMarkdown(trimmed));
+    const display = cleanIntraLineWhitespace(trimmed);
+    if (normalized.length === 0 && display.length === 0) {
+      continue;
+    }
+    blocks.push({ normalized, display });
+  }
+  return blocks;
+}
+
+export function normalizeDocumentText(text: string): string {
+  const blocks = buildParagraphBlocks(text);
+  return blocks
+    .map((block) => block.normalized)
+    .filter((block) => block.length > 0)
+    .join('\n');
+}
+
+export interface ParagraphMapping {
+  normalized: string;
+  display: string;
+}
+
+export function extractParagraphMappings(text: string): ParagraphMapping[] {
+  return buildParagraphBlocks(text);
+}
+
+/**
  * Normalize a single line for better matching
  * Removes trailing punctuation and extra whitespace
  */
 export function normalizeLine(line: string): string {
-  let normalized = line.trim();
+  let normalized = line.normalize('NFKC');
+  // Normalize various whitespace characters (ideographic, non-breaking)
+  normalized = normalized.replace(/[\u00A0\u2000-\u200B\u3000]/g, ' ');
+  // Normalize dash-like characters to ASCII hyphen-minus
+  normalized = normalized.replace(/[‐‑‒–—―−ー]/g, '-');
+  // Normalize wave/tilda variants
+  normalized = normalized.replace(/[〜～]/g, '~');
+  normalized = normalized.trim();
   // Remove trailing punctuation (。, 、, etc.)
   normalized = normalized.replace(/[。、，：；？！]+$/, '');
+  // Remove unintended single spaces between adjacent CJK/digit characters
+  normalized = normalized.replace(/(?<=[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}0-9]) (?=[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}0-9])/gu, '');
   // Remove extra whitespace
   normalized = normalized.replace(/\s+/g, ' ').trim();
   return normalized;
